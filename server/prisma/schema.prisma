@@ -1,0 +1,1026 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions", "fullTextSearch"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis, pgcrypto, unaccent]
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ENUMS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+enum UserRole {
+  CUSTOMER
+  RIDER
+  RESTAURANT
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum AuthProvider {
+  PHONE
+  GOOGLE
+  APPLE
+}
+
+enum RestaurantStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+  CLOSED
+}
+
+enum OrderStatus {
+  PENDING
+  PAYMENT_PENDING
+  CONFIRMED
+  ACCEPTED
+  PREPARING
+  READY
+  ASSIGNED
+  PICKED_UP
+  ON_THE_WAY
+  ARRIVING
+  DELIVERED
+  CANCELLED
+  REFUNDED
+  FAILED
+}
+
+enum CancellationBy {
+  CUSTOMER
+  RESTAURANT
+  RIDER
+  SYSTEM
+  ADMIN
+}
+
+enum PaymentMethod {
+  MPESA
+  AIRTEL_MONEY
+  CARD
+  CASH
+  WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  EXPIRED
+}
+
+enum RiderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+  OFFLINE
+}
+
+enum VehicleType {
+  BICYCLE
+  MOTORCYCLE
+  CAR
+  TUKTUK
+  FOOT
+}
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
+enum NotificationType {
+  ORDER_CONFIRMED
+  ORDER_ACCEPTED
+  ORDER_PREPARING
+  ORDER_READY
+  ORDER_PICKED_UP
+  ORDER_ON_THE_WAY
+  ORDER_ARRIVING
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  ORDER_REFUNDED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  NEW_ORDER
+  DELIVERY_REQUEST
+  DELIVERY_ASSIGNED
+  PROMO_AVAILABLE
+  REVIEW_REMINDER
+  SYSTEM_ANNOUNCEMENT
+  SUPPORT_REPLY
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING
+  RESOLVED
+  CLOSED
+}
+
+enum TicketCategory {
+  ORDER_ISSUE
+  PAYMENT_ISSUE
+  DELIVERY_ISSUE
+  RESTAURANT_ISSUE
+  ACCOUNT_ISSUE
+  REFUND_REQUEST
+  GENERAL_INQUIRY
+  OTHER
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  ON_HOLD
+}
+
+enum PayoutType {
+  RESTAURANT
+  RIDER
+}
+
+enum PromoType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_DELIVERY
+  FIRST_ORDER
+}
+
+enum CuisineType {
+  LOCAL_KENYAN
+  AFRICAN
+  INDIAN
+  CHINESE
+  ITALIAN
+  AMERICAN
+  MEXICAN
+  JAPANESE
+  THAI
+  ARABIC
+  CONTINENTAL
+  FAST_FOOD
+  HEALTHY
+  VEGETARIAN
+  SEAFOOD
+  GRILLS_BBQ
+  BAKERY_PASTRY
+  PIZZA
+  BURGERS
+  DESSERTS
+  BEVERAGES
+  OTHER
+}
+
+enum MoodTag {
+  COMFORT_FOOD
+  QUICK_BITE
+  DATE_NIGHT
+  HEALTHY
+  ADVENTUROUS
+  BUDGET_FRIENDLY
+  CELEBRATION
+  POST_WORKOUT
+  SPICY
+  SHARING
+  LATE_NIGHT
+  BREAKFAST
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// USER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+model User {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  email             String?      @unique
+  phone             String       @unique
+  avatar            String?
+  role              UserRole     @default(CUSTOMER)
+  status            UserStatus   @default(ACTIVE)
+  authProvider      AuthProvider @default(PHONE)
+  googleId          String?      @unique
+  appleId           String?      @unique
+  passwordHash      String?
+  isPhoneVerified   Boolean      @default(false)
+  isEmailVerified   Boolean      @default(false)
+  pushToken         String?
+  pushEnabled       Boolean      @default(true)
+  preferredLanguage String       @default("en")
+  preferredCurrency String       @default("KES")
+  lastLoginAt       DateTime?
+  lastSeenAt        DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  deletedAt         DateTime?
+
+  addresses           Address[]
+  orders              Order[]
+  reviews             Review[]
+  notifications       Notification[]
+  favoriteRestaurants UserFavorite[]
+  collections         FoodCollection[]
+  supportTickets      SupportTicket[]
+  rider               Rider?
+  restaurant          Restaurant?
+
+  @@index([phone])
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("users")
+}
+
+model RefreshToken {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @db.Uuid
+  tokenHash   String    @unique
+  deviceId    String?
+  deviceName  String?
+  deviceOS    String?
+  ipAddress   String?
+  userAgent   String?
+  expiresAt   DateTime
+  isRevoked   Boolean   @default(false)
+  revokedAt   DateTime?
+  lastUsedAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Address {
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String      @db.Uuid
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type             AddressType @default(OTHER)
+  label            String?
+  formattedAddress String
+  street           String?
+  apartment        String?
+  area             String?
+  city             String
+  county           String?
+  country          String      @default("KE")
+  postalCode       String?
+  latitude         Float
+  longitude        Float
+  instructions     String?
+  landmark         String?
+  isDefault        Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  orders Order[]
+
+  @@index([userId])
+  @@index([userId, isDefault])
+  @@map("addresses")
+}
+
+model Restaurant {
+  id                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerId              String           @unique @db.Uuid
+  owner                User             @relation(fields: [ownerId], references: [id])
+  name                 String
+  slug                 String           @unique
+  description          String           @db.Text
+  story                String?          @db.Text
+  logo                 String?
+  coverImage           String?
+  images               String[]
+  phone                String
+  email                String?
+  website              String?
+  instagramHandle      String?
+  facebookUrl          String?
+  twitterHandle        String?
+  formattedAddress     String
+  street               String?
+  area                 String?
+  city                 String
+  county               String?
+  country              String           @default("KE")
+  latitude             Float
+  longitude            Float
+  cuisineTypes         CuisineType[]
+  tags                 String[]
+  isHalalCertified     Boolean          @default(false)
+  isVegetarianFriendly Boolean          @default(false)
+  isVeganFriendly      Boolean          @default(false)
+  minimumOrder         Float            @default(0)
+  deliveryFeeType      String           @default("FLAT")
+  deliveryFeeBase      Float            @default(80)
+  deliveryFeePerKm     Float            @default(20)
+  freeDeliveryAbove    Float?
+  deliveryRadiusKm     Float            @default(5)
+  avgPrepTimeMinutes   Int              @default(25)
+  operatingHours       Json
+  commissionPercent    Float            @default(18)
+  status               RestaurantStatus @default(PENDING)
+  isActive             Boolean          @default(false)
+  isVerified           Boolean          @default(false)
+  isFeatured           Boolean          @default(false)
+  isPromoted           Boolean          @default(false)
+  promotedUntil        DateTime?
+  payoutMethod         String           @default("MPESA")
+  payoutPhone          String?
+  payoutBankName       String?
+  payoutAccountNumber  String?
+  payoutAccountName    String?
+  rejectionReason      String?
+  suspensionReason     String?
+  verifiedAt           DateTime?
+  verifiedBy           String?          @db.Uuid
+  totalOrders          Int              @default(0)
+  totalRevenue         Float            @default(0)
+  avgRating            Float            @default(0)
+  totalReviews         Int              @default(0)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  menuCategories MenuCategory[]
+  menuItems      MenuItem[]
+  orders         Order[]
+  reviews        Review[]
+  favorites      UserFavorite[]
+  documents      RestaurantDocument[]
+  payouts        Payout[]
+
+  @@index([status, isVerified, isActive])
+  @@index([latitude, longitude])
+  @@index([isFeatured])
+  @@index([avgRating(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([city, status])
+  @@map("restaurants")
+}
+
+model RestaurantDocument {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  restaurantId  String     @db.Uuid
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  type          String
+  name          String
+  fileUrl       String
+  fileType      String
+  isVerified    Boolean    @default(false)
+  verifiedAt    DateTime?
+  verifiedBy    String?    @db.Uuid
+  rejectionNote String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([restaurantId])
+  @@index([restaurantId, type])
+  @@map("restaurant_documents")
+}
+
+model MenuCategory {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  restaurantId String     @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  image        String?
+  sortOrder    Int        @default(0)
+  isVisible    Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  menuItems MenuItem[]
+
+  @@unique([restaurantId, name])
+  @@index([restaurantId, isVisible, sortOrder])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id                  String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  restaurantId        String       @db.Uuid
+  restaurant          Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  categoryId          String       @db.Uuid
+  category            MenuCategory @relation(fields: [categoryId], references: [id])
+  name                String
+  description         String       @db.Text
+  basePrice           Float
+  images              String[]
+  isSpicy             Boolean      @default(false)
+  isVegetarian        Boolean      @default(false)
+  isVegan             Boolean      @default(false)
+  isGlutenFree        Boolean      @default(false)
+  isChefsPick         Boolean      @default(false)
+  isPopular           Boolean      @default(false)
+  isNew               Boolean      @default(false)
+  isAvailable         Boolean      @default(true)
+  availableFrom       DateTime?
+  availableTo         DateTime?
+  prepTimeMinutes     Int?
+  calories            Int?
+  proteinGrams        Float?
+  carbsGrams          Float?
+  fatGrams            Float?
+  allergens           String[]
+  moodTags            MoodTag[]
+  customizationGroups Json         @default("[]")
+  totalOrders         Int          @default(0)
+  avgRating           Float        @default(0)
+  totalReviews        Int          @default(0)
+  sortOrder           Int          @default(0)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  deletedAt           DateTime?
+
+  orderItems      OrderItem[]
+  collectionItems CollectionItem[]
+
+  @@index([restaurantId, isAvailable])
+  @@index([restaurantId, categoryId])
+  @@index([isAvailable, isPopular])
+  @@index([restaurantId, totalOrders(sort: Desc)])
+  @@map("menu_items")
+}
+
+model Rider {
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String      @unique @db.Uuid
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status            RiderStatus @default(PENDING)
+  dateOfBirth       DateTime?
+  gender            String?
+  nationalIdNumber  String?     @unique
+  nationalIdFront   String?
+  nationalIdBack    String?
+  vehicleType       VehicleType @default(MOTORCYCLE)
+  vehicleMake       String?
+  vehicleModel      String?
+  vehicleYear       Int?
+  vehicleColor      String?
+  vehiclePlate      String?     @unique
+  licenseNumber     String?     @unique
+  licenseExpiry     DateTime?
+  licenseImage      String?
+  insuranceImage    String?
+  vehiclePhoto      String?
+  currentLatitude   Float?
+  currentLongitude  Float?
+  currentHeading    Float?
+  currentSpeed      Float?
+  locationUpdatedAt DateTime?
+  isOnline          Boolean     @default(false)
+  isAvailable       Boolean     @default(false)
+  avgRating         Float       @default(0)
+  totalRatings      Int         @default(0)
+  totalDeliveries   Int         @default(0)
+  completionRate    Float       @default(100)
+  acceptanceRate    Float       @default(100)
+  totalEarnings     Float       @default(0)
+  pendingEarnings   Float       @default(0)
+  rejectionReason   String?
+  suspensionReason  String?
+  approvedAt        DateTime?
+  approvedBy        String?     @db.Uuid
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  orders   Order[]
+  earnings RiderEarning[]
+  payouts  Payout[]
+  reviews  Review[]
+
+  @@index([status, isOnline, isAvailable])
+  @@index([currentLatitude, currentLongitude])
+  @@index([avgRating(sort: Desc)])
+  @@map("riders")
+}
+
+model RiderEarning {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  riderId     String   @db.Uuid
+  rider       Rider    @relation(fields: [riderId], references: [id])
+  orderId     String?  @db.Uuid
+  order       Order?   @relation(fields: [orderId], references: [id])
+  type        String
+  amount      Float
+  description String?
+  isPaidOut   Boolean  @default(false)
+  payoutId    String?  @db.Uuid
+  payout      Payout?  @relation(fields: [payoutId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([riderId])
+  @@index([riderId, isPaidOut])
+  @@index([riderId, createdAt(sort: Desc)])
+  @@index([orderId])
+  @@map("rider_earnings")
+}
+
+model Order {
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber         String          @unique
+  customerId          String          @db.Uuid
+  customer            User            @relation(fields: [customerId], references: [id])
+  restaurantId        String          @db.Uuid
+  restaurant          Restaurant      @relation(fields: [restaurantId], references: [id])
+  riderId             String?         @db.Uuid
+  rider               Rider?          @relation(fields: [riderId], references: [id])
+  deliveryAddressId   String?         @db.Uuid
+  deliveryAddress     Address?        @relation(fields: [deliveryAddressId], references: [id])
+  snapshotAddress     Json
+  status              OrderStatus     @default(PENDING)
+  subtotal            Float
+  deliveryFee         Float
+  serviceFee          Float           @default(50)
+  discountAmount      Float           @default(0)
+  totalAmount         Float
+  promoCodeId         String?         @db.Uuid
+  promoCode           PromoCode?      @relation(fields: [promoCodeId], references: [id])
+  promoCodeUsed       String?
+  paymentMethod       PaymentMethod
+  paymentStatus       PaymentStatus   @default(PENDING)
+  deliveryType        String          @default("ASAP")
+  scheduledFor        DateTime?
+  estimatedPickupAt   DateTime?
+  estimatedDeliveryAt DateTime?
+  acceptedAt          DateTime?
+  prepStartedAt       DateTime?
+  readyAt             DateTime?
+  pickedUpAt          DateTime?
+  deliveredAt         DateTime?
+  specialInstructions String?
+  cutleryIncluded     Boolean         @default(false)
+  cancelledAt         DateTime?
+  cancellationBy      CancellationBy?
+  cancellationReason  String?
+  restaurantEarnings  Float?
+  platformCommission  Float?
+  commissionPercent   Float?
+  riderEarnings       Float?
+  deliveryDistanceKm  Float?
+  customerRated       Boolean         @default(false)
+  restaurantRated     Boolean         @default(false)
+  devicePlatform      String?
+  appVersion          String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  items               OrderItem[]
+  payments            Payment[]
+  statusHistory       OrderStatusHistory[]
+  reviews             Review[]
+  riderEarningRecords RiderEarning[]
+  chatMessages        ChatMessage[]
+
+  @@index([customerId])
+  @@index([restaurantId])
+  @@index([riderId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([orderNumber])
+  @@index([customerId, createdAt(sort: Desc)])
+  @@index([restaurantId, status])
+  @@index([restaurantId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId              String   @db.Uuid
+  order                Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId           String   @db.Uuid
+  menuItem             MenuItem @relation(fields: [menuItemId], references: [id])
+  itemName             String
+  itemDescription      String?
+  itemImage            String?
+  basePrice            Float
+  quantity             Int      @default(1)
+  chosenCustomizations Json     @default("[]")
+  unitPrice            Float
+  totalPrice           Float
+  specialNote          String?
+  createdAt            DateTime @default(now())
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId        String       @db.Uuid
+  order          Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus     OrderStatus?
+  toStatus       OrderStatus
+  note           String?
+  changedBy      String?      @db.Uuid
+  changedByRole  UserRole?
+  riderLatitude  Float?
+  riderLongitude Float?
+  createdAt      DateTime     @default(now())
+
+  @@index([orderId])
+  @@index([orderId, createdAt(sort: Asc)])
+  @@map("order_status_history")
+}
+
+model Payment {
+  id                     String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId                String        @db.Uuid
+  order                  Order         @relation(fields: [orderId], references: [id])
+  method                 PaymentMethod
+  status                 PaymentStatus @default(PENDING)
+  amount                 Float
+  currency               String        @default("KES")
+  mpesaCheckoutRequestId String?       @unique
+  mpesaMerchantRequestId String?
+  mpesaReceiptNumber     String?       @unique
+  mpesaPhoneNumber       String?
+  airtelTransactionId    String?       @unique
+  airtelReference        String?
+  flutterwaveTxRef       String?       @unique
+  flutterwaveId          String?       @unique
+  flutterwaveFlwRef      String?
+  cardLastFour           String?
+  cardType               String?
+  cashCollectedAt        DateTime?
+  cashCollectedBy        String?       @db.Uuid
+  refundAmount           Float?
+  refundedAt             DateTime?
+  refundReference        String?
+  refundReason           String?
+  webhookPayload         Json?
+  webhookReceivedAt      DateTime?
+  ipAddress              String?
+  userAgent              String?
+  attemptNumber          Int           @default(1)
+  failureReason          String?
+  failureCode            String?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+  @@index([method, status])
+  @@index([mpesaCheckoutRequestId])
+  @@index([flutterwaveTxRef])
+  @@index([createdAt(sort: Desc)])
+  @@map("payments")
+}
+
+model Review {
+  id                    String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId            String      @db.Uuid
+  customer              User        @relation(fields: [customerId], references: [id])
+  orderId               String      @db.Uuid
+  order                 Order       @relation(fields: [orderId], references: [id])
+  restaurantId          String?     @db.Uuid
+  restaurant            Restaurant? @relation(fields: [restaurantId], references: [id])
+  riderId               String?     @db.Uuid
+  rider                 Rider?      @relation(fields: [riderId], references: [id])
+  foodRating            Float?
+  packagingRating       Float?
+  valueRating           Float?
+  deliveryRating        Float?
+  riderRating           Float?
+  overallRating         Float
+  comment               String?     @db.Text
+  restaurantTags        String[]
+  riderTags             String[]
+  itemRatings           Json?
+  photos                String[]
+  isPublic              Boolean     @default(true)
+  isReported            Boolean     @default(false)
+  reportReason          String?
+  restaurantResponse    String?     @db.Text
+  restaurantRespondedAt DateTime?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@unique([orderId, customerId])
+  @@index([restaurantId, isPublic])
+  @@index([riderId])
+  @@index([restaurantId, overallRating(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("reviews")
+}
+
+model PromoCode {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                  String        @unique
+  description           String?
+  customerDescription   String?
+  type                  PromoType
+  discountValue         Float
+  maxDiscountAmount     Float?
+  minimumOrderAmount    Float         @default(0)
+  applicableRestaurants String[]
+  applicableCuisines    CuisineType[]
+  newUsersOnly          Boolean       @default(false)
+  firstOrderOnly        Boolean       @default(false)
+  validFrom             DateTime      @default(now())
+  validTo               DateTime?
+  usageLimit            Int?
+  usageLimitPerUser     Int           @default(1)
+  totalUsed             Int           @default(0)
+  isActive              Boolean       @default(true)
+  createdBy             String?       @db.Uuid
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  orders Order[]
+  usages PromoUsage[]
+
+  @@index([code])
+  @@index([isActive, validFrom, validTo])
+  @@map("promo_codes")
+}
+
+model PromoUsage {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promoCodeId     String    @db.Uuid
+  promoCode       PromoCode @relation(fields: [promoCodeId], references: [id])
+  userId          String    @db.Uuid
+  orderId         String    @db.Uuid
+  discountApplied Float
+  createdAt       DateTime  @default(now())
+
+  @@unique([promoCodeId, userId, orderId])
+  @@index([promoCodeId, userId])
+  @@index([userId])
+  @@map("promo_usages")
+}
+
+model Notification {
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String           @db.Uuid
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          NotificationType
+  title         String
+  body          String
+  data          Json?
+  imageUrl      String?
+  isRead        Boolean          @default(false)
+  readAt        DateTime?
+  pushSent      Boolean          @default(false)
+  pushSentAt    DateTime?
+  pushDelivered Boolean?
+  pushError     String?
+  orderId       String?          @db.Uuid
+  restaurantId  String?          @db.Uuid
+  createdAt     DateTime         @default(now())
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([orderId])
+  @@map("notifications")
+}
+
+model UserFavorite {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String     @db.Uuid
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurantId String     @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([userId, restaurantId])
+  @@index([userId])
+  @@map("user_favorites")
+}
+
+model FoodCollection {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  emoji       String?
+  coverImage  String?
+  isPublic    Boolean  @default(false)
+  shareToken  String?  @unique
+  itemCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items CollectionItem[]
+
+  @@index([userId])
+  @@index([userId, isPublic])
+  @@map("food_collections")
+}
+
+model CollectionItem {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  collectionId String         @db.Uuid
+  collection   FoodCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  menuItemId   String         @db.Uuid
+  menuItem     MenuItem       @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  note         String?
+  sortOrder    Int            @default(0)
+  createdAt    DateTime       @default(now())
+
+  @@unique([collectionId, menuItemId])
+  @@index([collectionId])
+  @@map("collection_items")
+}
+
+model SupportTicket {
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketNumber       String         @unique
+  userId             String         @db.Uuid
+  user               User           @relation(fields: [userId], references: [id])
+  orderId            String?        @db.Uuid
+  category           TicketCategory
+  subject            String
+  status             TicketStatus   @default(OPEN)
+  priority           String         @default("NORMAL")
+  assignedTo         String?        @db.Uuid
+  assignedAt         DateTime?
+  resolvedAt         DateTime?
+  resolutionNote     String?
+  satisfactionRating Int?
+  satisfactionNote   String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  messages TicketMessage[]
+
+  @@index([userId])
+  @@index([status, priority])
+  @@index([assignedTo, status])
+  @@index([createdAt(sort: Desc)])
+  @@index([orderId])
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketId    String        @db.Uuid
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId    String        @db.Uuid
+  senderRole  UserRole
+  message     String        @db.Text
+  attachments String[]
+  isInternal  Boolean       @default(false)
+  readAt      DateTime?
+  createdAt   DateTime      @default(now())
+
+  @@index([ticketId, createdAt(sort: Asc)])
+  @@map("ticket_messages")
+}
+
+model ChatMessage {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String   @db.Uuid
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  senderId    String   @db.Uuid
+  senderRole  UserRole
+  message     String
+  messageType String   @default("TEXT")
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([orderId, createdAt(sort: Asc)])
+  @@index([orderId, isRead])
+  @@map("chat_messages")
+}
+
+model Payout {
+  id                  String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payoutReference     String       @unique
+  type                PayoutType
+  status              PayoutStatus @default(PENDING)
+  restaurantId        String?      @db.Uuid
+  restaurant          Restaurant?  @relation(fields: [restaurantId], references: [id])
+  riderId             String?      @db.Uuid
+  rider               Rider?       @relation(fields: [riderId], references: [id])
+  grossAmount         Float
+  deductions          Float        @default(0)
+  netAmount           Float
+  currency            String       @default("KES")
+  periodFrom          DateTime
+  periodTo            DateTime
+  orderCount          Int          @default(0)
+  payoutMethod        String
+  payoutPhone         String?
+  payoutBankName      String?
+  payoutAccountNumber String?
+  payoutAccountName   String?
+  transactionId       String?
+  transactionRef      String?
+  processedAt         DateTime?
+  failureReason       String?
+  initiatedBy         String?      @db.Uuid
+  notes               String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  riderEarnings RiderEarning[]
+
+  @@index([restaurantId, status])
+  @@index([riderId, status])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("payouts")
+}
+
+model AppBanner {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  subtitle    String?
+  imageUrl    String
+  actionType  String
+  actionValue String?
+  targetCity  String?
+  startsAt    DateTime  @default(now())
+  endsAt      DateTime?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  impressions Int       @default(0)
+  clicks      Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isActive, startsAt, endsAt])
+  @@index([sortOrder])
+  @@map("app_banners")
+}
+
+model AppConfig {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key         String   @unique
+  value       Json
+  description String?
+  isPublic    Boolean  @default(false)
+  updatedBy   String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("app_configs")
+}
+
+model AdminAuditLog {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminId       String   @db.Uuid
+  action        String
+  targetType    String
+  targetId      String   @db.Uuid
+  previousValue Json?
+  newValue      Json?
+  notes         String?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@index([createdAt(sort: Desc)])
+  @@map("admin_audit_logs")
+}
+
+model PushNotificationLog {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @db.Uuid
+  pushToken     String
+  title         String
+  body          String
+  data          Json?
+  status        String
+  expoTicketId  String?
+  expoReceiptId String?
+  error         String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("push_notification_logs")
+}

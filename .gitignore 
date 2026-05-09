@@ -1,0 +1,65 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Environment variables — NEVER COMMIT THESE
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+*.env
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Expo / React Native
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+android/
+ios/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime
+pids/
+*.pid
+*.seed
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Turbo
+.turbo/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Prisma
+prisma/migrations/dev.db
+
+# Secrets (extra safety)
+*.pem
+*.key
+secrets/

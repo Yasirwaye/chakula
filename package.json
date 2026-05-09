@@ -1,0 +1,38 @@
+{
+  "name": "chakula",
+  "private": true,
+  "packageManager": "npm@10.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "server"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:server": "turbo run dev --filter=server",
+    "dev:mobile": "turbo run dev --filter=mobile",
+    "dev:restaurant": "turbo run dev --filter=restaurant-dashboard",
+    "dev:admin": "turbo run dev --filter=admin-panel",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:generate": "cd server && npx prisma generate",
+    "db:push": "cd server && npx prisma db push",
+    "db:migrate": "cd server && npx prisma migrate dev",
+    "db:seed": "cd server && npx prisma db seed",
+    "db:studio": "cd server && npx prisma studio",
+    "db:reset": "cd server && npx prisma migrate reset"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0",
+    "prettier": "^3.2.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

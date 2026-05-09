@@ -1,0 +1,20 @@
+{
+  "name": "@chakula/shared-schemas",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  }
+}

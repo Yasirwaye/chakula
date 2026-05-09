@@ -1,0 +1,41 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: cd server && npx prisma generate
+
+      - name: Type check everything
+        run: npx turbo run type-check
+
+      - name: Build shared packages
+        run: npx turbo run build --filter=@chakula/shared-types --filter=@chakula/shared-schemas --filter=@chakula/shared-utils
+
+      - name: Check for secrets accidentally committed
+        run: |
+          # Fail if any .env files were committed
+          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E "^\.env$|^server/\.env$"; then
+            echo "❌ ERROR: .env file was committed! Remove it immediately."
+            exit 1
+          fi
+          echo "✅ No secrets found in commit"

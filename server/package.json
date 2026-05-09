@@ -1,0 +1,62 @@
+{
+  "name": "server",
+  "version": "0.0.1",
+  "private": true,
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc --noEmit && echo 'Type check passed'",
+    "start": "tsx src/server.ts",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset"
+  },
+  "dependencies": {
+    "@chakula/shared-types": "*",
+    "@chakula/shared-schemas": "*",
+    "@chakula/shared-utils": "*",
+    "@fastify/cookie": "^9.3.1",
+    "@fastify/cors": "^9.0.1",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/jwt": "^8.0.1",
+    "@fastify/multipart": "^8.3.0",
+    "@fastify/rate-limit": "^9.1.0",
+    "@fastify/swagger": "^8.14.0",
+    "@fastify/swagger-ui": "^4.0.1",
+    "@prisma/client": "5.22.0",
+    "@sentry/node": "^8.9.2",
+    "africastalking": "^0.6.4",
+    "axios": "^1.7.2",
+    "bcryptjs": "^2.4.3",
+    "bullmq": "^5.7.7",
+    "cloudinary": "^2.2.0",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.27.0",
+    "fastify-plugin": "^4.5.1",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.13",
+    "pino": "^9.2.0",
+    "pino-pretty": "^11.2.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/nodemailer": "^6.4.15",
+    "@types/node": "^20.0.0",
+    "prisma": "5.22.0",
+    "tsx": "^4.11.2",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

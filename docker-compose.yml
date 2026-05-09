@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: chakula_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: chakula_dev
+      POSTGRES_USER: chakula
+      POSTGRES_PASSWORD: chakula_password_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - chakula_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U chakula -d chakula_dev']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: chakula_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass chakula_redis_dev
+    ports:
+      - '6379:6379'
+    volumes:
+      - chakula_redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--auth', 'chakula_redis_dev', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: chakula_redis_ui
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:chakula_redis_dev
+    ports:
+      - '8081:8081'
+    depends_on:
+      - redis
+
+volumes:
+  chakula_postgres_data:
+    driver: local
+  chakula_redis_data:
+    driver: local

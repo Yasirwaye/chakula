@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "../",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "paths": {
+      "@chakula/shared-types": ["../packages/shared-types/src/index.ts"],
+      "@chakula/shared-schemas": ["../packages/shared-schemas/src/index.ts"],
+      "@chakula/shared-utils": ["../packages/shared-utils/src/index.ts"]
+    }
+  },
+  "include": ["src", "prisma"],
+  "exclude": ["node_modules", "dist"]
+}
