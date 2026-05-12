@@ -70,6 +70,9 @@ export const env = {
   GOOGLE_CLIENT_ID: optionalEnv('GOOGLE_CLIENT_ID'),
   GOOGLE_MAPS_API_KEY: optionalEnv('GOOGLE_MAPS_API_KEY'),
 
+  // Apple Sign-In
+  APPLE_CLIENT_ID: optionalEnv('APPLE_CLIENT_ID', 'com.chakula.app'),
+
   // M-Pesa
   MPESA_CONSUMER_KEY: optionalEnv('MPESA_CONSUMER_KEY'),
   MPESA_CONSUMER_SECRET: optionalEnv('MPESA_CONSUMER_SECRET'),

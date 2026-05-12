@@ -63,3 +63,11 @@ prisma/migrations/dev.db
 *.pem
 *.key
 secrets/
+
+npx expo install expo-router expo-linking expo-constants expo-status-bar expo-secure-store expo-auth-session expo-web-browser expo-crypto expo-font expo-splash-screen expo-image expo-haptics
+
+npm install zustand @tanstack/react-query axios react-hook-form @hookform/resolvers zod
+
+npm install @chakula/shared-types@* @chakula/shared-schemas@* @chakula/shared-utils@*
+
+npm install react-native-reanimated react-native-gesture-handler react-native-screens react-native-safe-area-context @react-native-async-storage/async-storage

@@ -60,6 +60,15 @@ async function authPlugin(fastify: FastifyInstance): Promise<void> {
         )
       }
 
+      // Reject setup tokens — they have purpose='setup' and no userId
+      const rawPayload = payload as JwtPayload & { purpose?: string; phone?: string }
+      if (rawPayload.purpose === 'setup' || !rawPayload.userId) {
+        throw new AuthenticationError(
+          'Invalid access token. Setup tokens cannot be used for authentication.',
+          'AUTH_003'
+        )
+      }
+
       // Check token blacklist (for logged-out tokens)
       const isBlacklisted = await redis.exists(
         RedisKeys.tokenBlacklist(payload.sessionId)

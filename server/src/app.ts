@@ -238,5 +238,20 @@ export async function buildApp() {
     })
   })
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ROUTES
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const { authRoutes } = await import('./modules/auth/auth.routes.js')
+  await app.register(authRoutes, { prefix: `/${env.API_VERSION}` })
+
+  const { restaurantRoutes } = await import('./modules/restaurants/restaurants.routes.js')
+  await app.register(restaurantRoutes, { prefix: `/${env.API_VERSION}` })
+
+    const { searchRoutes } = await import('./modules/search/search.routes.js')
+  await app.register(searchRoutes, { prefix: `/${env.API_VERSION}` })
+
+  const { uploadRoutes } = await import('./modules/uploads/uploads.routes.js')
+  await app.register(uploadRoutes, { prefix: `/${env.API_VERSION}` })
+
   return app
 }
